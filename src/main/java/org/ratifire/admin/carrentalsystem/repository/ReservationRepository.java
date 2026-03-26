@@ -15,7 +15,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query(value = "SELECT COUNT(*) > 0 FROM reservations r " +
             "WHERE r.car_id = :carId " +
             "AND r.start_date_time < :endDateTime " +
-            "AND :startDateTime < r.start_date_time + (r.days || ' days')::interval",
+            "AND :startDateTime < r.start_date_time + r.days * INTERVAL '1' DAY",
             nativeQuery = true)
     boolean existsOverlappingReservation(
             @Param("carId") Long carId,
