@@ -9,11 +9,13 @@ import org.ratifire.admin.carrentalsystem.dto.UserDto;
 import org.ratifire.admin.carrentalsystem.entity.User;
 import org.ratifire.admin.carrentalsystem.exception.ResourceNotFoundException;
 import org.ratifire.admin.carrentalsystem.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -21,6 +23,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
@@ -30,15 +35,17 @@ class UserServiceTest {
         UserDto dto = UserDto.builder()
                 .name("John Doe")
                 .email("john@example.com")
+                .password("rawPassword")
                 .build();
 
         User saved = User.builder()
                 .id(1L)
                 .name("John Doe")
                 .email("john@example.com")
-                .password("")
+                .password("encodedPassword")
                 .build();
 
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(saved);
 
         UserDto result = userService.create(dto);
@@ -46,6 +53,7 @@ class UserServiceTest {
         assertEquals(1L, result.getId());
         assertEquals("John Doe", result.getName());
         assertEquals("john@example.com", result.getEmail());
+        verify(passwordEncoder).encode("rawPassword");
         verify(userRepository).save(any(User.class));
     }
 
