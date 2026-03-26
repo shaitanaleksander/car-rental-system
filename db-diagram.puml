@@ -14,7 +14,7 @@ entity "users" {
   * password : VARCHAR(255)
 }
 
-entity "car_pools" {
+entity "cars" {
   * **id** : BIGINT <<PK, IDENTITY>>
   --
   * car_type : VARCHAR(50)
@@ -26,12 +26,12 @@ entity "reservations" {
   * **id** : BIGINT <<PK, IDENTITY>>
   --
   * user_id : BIGINT <<FK>>
-  * car_pool_id : BIGINT <<FK>>
+  * car_id : BIGINT <<FK>>
   * start_date_time : TIMESTAMP
   * days : INTEGER
 }
 
 users ||--o{ reservations : "has"
-car_pools ||--o{ reservations : "booked from"
+cars ||--o{ reservations : "booked from"
 
 @enduml

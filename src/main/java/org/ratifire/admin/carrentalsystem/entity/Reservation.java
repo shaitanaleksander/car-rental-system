@@ -22,8 +22,8 @@ public class Reservation {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "car_pool_id", nullable = false)
-    private CarPool carPool;
+    @JoinColumn(name = "car_id", nullable = false)
+    private Car car;
 
     @Column(nullable = false)
     private LocalDateTime startDateTime;
