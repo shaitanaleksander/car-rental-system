@@ -7,6 +7,7 @@ import org.ratifire.admin.carrentalsystem.dto.CarDto;
 import org.ratifire.admin.carrentalsystem.enums.CarType;
 import org.ratifire.admin.carrentalsystem.exception.ResourceNotFoundException;
 import org.ratifire.admin.carrentalsystem.repository.CarRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +34,21 @@ public class CarService {
         return CarConverter.toDto(car);
     }
 
+    public List<CarDto> getAll(int limit) {
+        return carRepository.findAll(PageRequest.of(0, limit)).stream()
+                .map(CarConverter::toDto)
+                .toList();
+    }
+
     public List<CarDto> getByCarType(CarType carType) {
         return carRepository.findByCarType(carType).stream()
+                .map(CarConverter::toDto)
+                .toList();
+    }
+
+    public List<CarDto> getByCarType(CarType carType, int limit) {
+        return carRepository.findByCarType(carType).stream()
+                .limit(limit)
                 .map(CarConverter::toDto)
                 .toList();
     }

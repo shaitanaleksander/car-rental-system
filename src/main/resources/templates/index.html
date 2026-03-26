@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Rental System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="page">
+    <header>
+        <h1>Car Rental System</h1>
+        <form th:action="@{/logout}" method="post" class="logout-form">
+            <button type="submit" class="btn-logout">Logout</button>
+        </form>
+    </header>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <!-- Car List -->
+    <section>
+        <h2>Available Cars</h2>
+        <form th:action="@{/}" method="get" class="filter-bar">
+            <label for="type">Filter by type:</label>
+            <select id="type" name="type" onchange="this.form.submit()">
+                <option value="">All</option>
+                <option th:each="t : ${carTypes}" th:value="${t}" th:text="${t}"
+                        th:selected="${t == selectedType}"></option>
+            </select>
+        </form>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Plate Number</th>
+                <th>Type</th>
+                <th>Start Date/Time</th>
+                <th>Days</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="car : ${cars}">
+                <td th:text="${car.plateNumber}"></td>
+                <td th:text="${car.carType}"></td>
+                <td>
+                    <form th:action="@{/reserve}" method="post" class="reserve-form">
+                        <input type="hidden" name="carId" th:value="${car.id}">
+                        <input type="datetime-local" name="startDateTime" required>
+                </td>
+                <td>
+                        <input type="number" name="days" min="1" max="30" value="1" required class="days-input">
+                </td>
+                <td>
+                        <button type="submit" class="btn-reserve">Reserve</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(cars)}">
+                <td colspan="5" class="empty">No cars found.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- My Reservations -->
+    <section>
+        <h2>My Reservations</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Plate Number</th>
+                <th>Type</th>
+                <th>Start Date/Time</th>
+                <th>Days</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="res : ${reservations}">
+                <td th:text="${carMap[res.carId]?.plateNumber}"></td>
+                <td th:text="${carMap[res.carId]?.carType}"></td>
+                <td th:text="${#temporals.format(res.startDateTime, 'yyyy-MM-dd HH:mm')}"></td>
+                <td th:text="${res.days}"></td>
+                <td>
+                    <form th:action="@{/reservations/{id}/delete(id=${res.id})}" method="post">
+                        <button type="submit" class="btn-delete">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(reservations)}">
+                <td colspan="5" class="empty">No reservations yet.</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
+</body>
+</html>
