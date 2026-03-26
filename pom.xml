@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.ratifire.admin</groupId>
-    <artifactId>Car-rental-system</artifactId>
+    <artifactId>car-rental-system</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Car-rental-system</name>
     <description>Car-rental-system</description>
