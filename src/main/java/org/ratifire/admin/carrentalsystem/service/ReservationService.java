@@ -49,43 +49,10 @@ public class ReservationService {
         return ReservationConverter.toDto(saved);
     }
 
-    public ReservationDto getById(Long id) {
-        var reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id: " + id));
-        return ReservationConverter.toDto(reservation);
-    }
-
     public List<ReservationDto> getByUserId(Long userId) {
         return reservationRepository.findByUserId(userId).stream()
                 .map(ReservationConverter::toDto)
                 .toList();
-    }
-
-    @Transactional
-    public ReservationDto update(Long id, ReservationDto dto) {
-        var reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id: " + id));
-
-        Car car = carRepository.findById(dto.getCarId())
-                .orElseThrow(() -> new ResourceNotFoundException("Car not found with id: " + dto.getCarId()));
-
-        LocalDateTime endDateTime = dto.getStartDateTime().plusDays(dto.getDays());
-
-        boolean hasOverlap = reservationRepository.existsOverlappingReservation(
-                car.getId(), dto.getStartDateTime(), endDateTime);
-
-        if (hasOverlap && !reservation.getCar().getId().equals(car.getId())) {
-            throw new IllegalStateException("Car with plate " + car.getPlateNumber()
-                    + " is not available for the requested period");
-        }
-
-        reservation.setCar(car);
-        reservation.setStartDateTime(dto.getStartDateTime());
-        reservation.setDays(dto.getDays());
-
-        var saved = reservationRepository.save(reservation);
-        log.info("Updated reservation with id: {}", saved.getId());
-        return ReservationConverter.toDto(saved);
     }
 
     @Transactional

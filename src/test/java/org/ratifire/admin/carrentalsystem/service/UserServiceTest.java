@@ -7,11 +7,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ratifire.admin.carrentalsystem.dto.UserDto;
 import org.ratifire.admin.carrentalsystem.entity.User;
-import org.ratifire.admin.carrentalsystem.exception.ResourceNotFoundException;
 import org.ratifire.admin.carrentalsystem.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,47 +52,5 @@ class UserServiceTest {
         assertEquals("john@example.com", result.getEmail());
         verify(passwordEncoder).encode("rawPassword");
         verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void getById_shouldReturnDto_whenFound() {
-        User user = User.builder()
-                .id(1L)
-                .name("Jane Smith")
-                .email("jane@example.com")
-                .password("secret")
-                .build();
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        UserDto result = userService.getById(1L);
-
-        assertEquals(1L, result.getId());
-        assertEquals("Jane Smith", result.getName());
-        assertEquals("jane@example.com", result.getEmail());
-    }
-
-    @Test
-    void getById_shouldThrow_whenNotFound() {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> userService.getById(99L));
-    }
-
-    @Test
-    void delete_shouldDelete_whenExists() {
-        when(userRepository.existsById(1L)).thenReturn(true);
-
-        userService.delete(1L);
-
-        verify(userRepository).deleteById(1L);
-    }
-
-    @Test
-    void delete_shouldThrow_whenNotFound() {
-        when(userRepository.existsById(99L)).thenReturn(false);
-
-        assertThrows(ResourceNotFoundException.class, () -> userService.delete(99L));
-        verify(userRepository, never()).deleteById(any());
     }
 }

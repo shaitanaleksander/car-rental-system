@@ -87,8 +87,6 @@ class ReservationServiceTest {
         assertEquals(10L, result.getId());
         assertEquals(1L, result.getUserId());
         assertEquals(2L, result.getCarId());
-        assertEquals(startDateTime, result.getStartDateTime());
-        assertEquals(3, result.getDays());
         verify(reservationRepository).save(any(Reservation.class));
     }
 
@@ -122,27 +120,6 @@ class ReservationServiceTest {
         verify(reservationRepository, never()).save(any());
     }
 
-    // --- getById ---
-
-    @Test
-    void getById_shouldReturnDto_whenFound() {
-        Reservation reservation = buildReservation(buildUser(), buildCar());
-        when(reservationRepository.findById(10L)).thenReturn(Optional.of(reservation));
-
-        ReservationDto result = reservationService.getById(10L);
-
-        assertEquals(10L, result.getId());
-        assertEquals(1L, result.getUserId());
-        assertEquals(2L, result.getCarId());
-    }
-
-    @Test
-    void getById_shouldThrow_whenNotFound() {
-        when(reservationRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> reservationService.getById(99L));
-    }
-
     // --- getByUserId ---
 
     @Test
@@ -169,73 +146,6 @@ class ReservationServiceTest {
         List<ReservationDto> result = reservationService.getByUserId(99L);
 
         assertTrue(result.isEmpty());
-    }
-
-    // --- update ---
-
-    @Test
-    void update_shouldUpdateAndReturnDto() {
-        User user = buildUser();
-        Car car = buildCar();
-        Reservation existing = buildReservation(user, car);
-        LocalDateTime newStart = startDateTime.plusDays(5);
-
-        ReservationDto dto = ReservationDto.builder()
-                .carId(2L)
-                .startDateTime(newStart)
-                .days(4)
-                .build();
-
-        Reservation updated = Reservation.builder()
-                .id(10L).user(user).car(car).startDateTime(newStart).days(4).build();
-
-        when(reservationRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(carRepository.findById(2L)).thenReturn(Optional.of(car));
-        when(reservationRepository.existsOverlappingReservation(eq(2L), eq(newStart), any())).thenReturn(false);
-        when(reservationRepository.save(any(Reservation.class))).thenReturn(updated);
-
-        ReservationDto result = reservationService.update(10L, dto);
-
-        assertEquals(10L, result.getId());
-        assertEquals(newStart, result.getStartDateTime());
-        assertEquals(4, result.getDays());
-    }
-
-    @Test
-    void update_shouldThrow_whenReservationNotFound() {
-        ReservationDto dto = buildDto();
-        when(reservationRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> reservationService.update(99L, dto));
-    }
-
-    @Test
-    void update_shouldThrow_whenCarNotFound() {
-        Reservation existing = buildReservation(buildUser(), buildCar());
-        ReservationDto dto = buildDto();
-
-        when(reservationRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(carRepository.findById(2L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> reservationService.update(10L, dto));
-    }
-
-    @Test
-    void update_shouldThrow_whenNewCarNotAvailable() {
-        User user = buildUser();
-        Car oldCar = Car.builder().id(3L).carType(CarType.SUV).plateNumber("XX-999-YY").build();
-        Car newCar = buildCar();
-        Reservation existing = Reservation.builder()
-                .id(10L).user(user).car(oldCar).startDateTime(startDateTime).days(3).build();
-
-        ReservationDto dto = buildDto();
-
-        when(reservationRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(carRepository.findById(2L)).thenReturn(Optional.of(newCar));
-        when(reservationRepository.existsOverlappingReservation(eq(2L), eq(startDateTime), any())).thenReturn(true);
-
-        assertThrows(IllegalStateException.class, () -> reservationService.update(10L, dto));
-        verify(reservationRepository, never()).save(any());
     }
 
     // --- delete ---

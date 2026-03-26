@@ -6,6 +6,8 @@ import org.ratifire.admin.carrentalsystem.service.ReservationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
@@ -19,14 +21,9 @@ public class ReservationController {
         return reservationService.create(dto);
     }
 
-    @GetMapping("/{id}")
-    public ReservationDto getById(@PathVariable Long id) {
-        return reservationService.getById(id);
-    }
-
-    @PutMapping("/{id}")
-    public ReservationDto update(@PathVariable Long id, @RequestBody ReservationDto dto) {
-        return reservationService.update(id, dto);
+    @GetMapping
+    public List<ReservationDto> getByUserId(@RequestParam Long userId) {
+        return reservationService.getByUserId(userId);
     }
 
     @DeleteMapping("/{id}")

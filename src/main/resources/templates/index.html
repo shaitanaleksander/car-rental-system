@@ -15,20 +15,18 @@
         </form>
     </header>
 
-    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div id="alert" class="alert" style="display:none;"></div>
 
     <!-- Car List -->
     <section>
         <h2>Available Cars</h2>
-        <form th:action="@{/}" method="get" class="filter-bar">
+        <div class="filter-bar">
             <label for="type">Filter by type:</label>
-            <select id="type" name="type" onchange="this.form.submit()">
+            <select id="type">
                 <option value="">All</option>
-                <option th:each="t : ${carTypes}" th:value="${t}" th:text="${t}"
-                        th:selected="${t == selectedType}"></option>
+                <option th:each="t : ${carTypes}" th:value="${t}" th:text="${t}"></option>
             </select>
-        </form>
+        </div>
 
         <table>
             <thead>
@@ -40,26 +38,7 @@
                 <th>Action</th>
             </tr>
             </thead>
-            <tbody>
-            <tr th:each="car : ${cars}">
-                <td th:text="${car.plateNumber}"></td>
-                <td th:text="${car.carType}"></td>
-                <td>
-                    <form th:action="@{/reserve}" method="post" class="reserve-form">
-                        <input type="hidden" name="carId" th:value="${car.id}">
-                        <input type="datetime-local" name="startDateTime" required>
-                </td>
-                <td>
-                        <input type="number" name="days" min="1" max="30" value="1" required class="days-input">
-                </td>
-                <td>
-                        <button type="submit" class="btn-reserve">Reserve</button>
-                    </form>
-                </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(cars)}">
-                <td colspan="5" class="empty">No cars found.</td>
-            </tr>
+            <tbody id="car-table-body">
             </tbody>
         </table>
     </section>
@@ -77,24 +56,135 @@
                 <th>Action</th>
             </tr>
             </thead>
-            <tbody>
-            <tr th:each="res : ${reservations}">
-                <td th:text="${carMap[res.carId]?.plateNumber}"></td>
-                <td th:text="${carMap[res.carId]?.carType}"></td>
-                <td th:text="${#temporals.format(res.startDateTime, 'yyyy-MM-dd HH:mm')}"></td>
-                <td th:text="${res.days}"></td>
-                <td>
-                    <form th:action="@{/reservations/{id}/delete(id=${res.id})}" method="post">
-                        <button type="submit" class="btn-delete">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(reservations)}">
-                <td colspan="5" class="empty">No reservations yet.</td>
-            </tr>
+            <tbody id="reservation-table-body">
             </tbody>
         </table>
     </section>
 </div>
+
+<script>
+    let currentUserId = null;
+    let carsCache = {};
+
+    function showAlert(message, type) {
+        const alert = document.getElementById('alert');
+        alert.textContent = message;
+        alert.className = 'alert alert-' + type;
+        alert.style.display = 'block';
+        setTimeout(() => alert.style.display = 'none', 4000);
+    }
+
+    async function loadCurrentUser() {
+        const res = await fetch('/api/users/me');
+        const user = await res.json();
+        currentUserId = user.id;
+    }
+
+    async function loadCars() {
+        const type = document.getElementById('type').value;
+        const url = type ? '/api/cars?type=' + type : '/api/cars';
+        const res = await fetch(url);
+        const cars = await res.json();
+
+        cars.forEach(c => carsCache[c.id] = c);
+
+        const tbody = document.getElementById('car-table-body');
+        if (cars.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty">No cars found.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = cars.map(car => `
+            <tr>
+                <td>${car.plateNumber}</td>
+                <td>${car.carType}</td>
+                <td><input type="datetime-local" id="start-${car.id}" required></td>
+                <td><input type="number" id="days-${car.id}" min="1" max="30" value="1" required class="days-input"></td>
+                <td><button class="btn-reserve" onclick="reserveCar(${car.id})">Reserve</button></td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadReservations() {
+        const res = await fetch('/api/reservations?userId=' + currentUserId);
+        const reservations = await res.json();
+
+        // Load car details for reservations not in cache
+        for (const r of reservations) {
+            if (!carsCache[r.carId]) {
+                const carRes = await fetch('/api/cars/' + r.carId);
+                if (carRes.ok) carsCache[r.carId] = await carRes.json();
+            }
+        }
+
+        const tbody = document.getElementById('reservation-table-body');
+        if (reservations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty">No reservations yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = reservations.map(r => {
+            const car = carsCache[r.carId] || {};
+            const dt = new Date(r.startDateTime);
+            const formatted = dt.toLocaleString('en-GB', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+            return `
+                <tr>
+                    <td>${car.plateNumber || '-'}</td>
+                    <td>${car.carType || '-'}</td>
+                    <td>${formatted}</td>
+                    <td>${r.days}</td>
+                    <td><button class="btn-delete" onclick="deleteReservation(${r.id})">Delete</button></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function reserveCar(carId) {
+        const startDateTime = document.getElementById('start-' + carId).value;
+        const days = document.getElementById('days-' + carId).value;
+
+        if (!startDateTime || !days) {
+            showAlert('Please fill in date and days.', 'error');
+            return;
+        }
+
+        const res = await fetch('/api/reservations', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                userId: currentUserId,
+                carId: carId,
+                startDateTime: startDateTime,
+                days: parseInt(days)
+            })
+        });
+
+        if (res.ok) {
+            showAlert('Car reserved successfully!', 'success');
+            await loadReservations();
+        } else {
+            const err = await res.json();
+            showAlert(err.error || 'Reservation failed.', 'error');
+        }
+    }
+
+    async function deleteReservation(id) {
+        const res = await fetch('/api/reservations/' + id, {method: 'DELETE'});
+
+        if (res.ok) {
+            showAlert('Reservation deleted.', 'success');
+            await loadReservations();
+        } else {
+            const err = await res.json();
+            showAlert(err.error || 'Delete failed.', 'error');
+        }
+    }
+
+    document.getElementById('type').addEventListener('change', loadCars);
+
+    (async () => {
+        await loadCurrentUser();
+        await loadCars();
+        await loadReservations();
+    })();
+</script>
 </body>
 </html>
