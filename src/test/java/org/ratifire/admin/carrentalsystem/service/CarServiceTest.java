@@ -10,12 +10,13 @@ import org.ratifire.admin.carrentalsystem.entity.Car;
 import org.ratifire.admin.carrentalsystem.enums.CarType;
 import org.ratifire.admin.carrentalsystem.exception.ResourceNotFoundException;
 import org.ratifire.admin.carrentalsystem.repository.CarRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,29 +27,6 @@ class CarServiceTest {
 
     @InjectMocks
     private CarService carService;
-
-    @Test
-    void create_shouldSaveAndReturnDto() {
-        CarDto dto = CarDto.builder()
-                .carType(CarType.SEDAN)
-                .plateNumber("AB-123-CD")
-                .build();
-
-        Car saved = Car.builder()
-                .id(1L)
-                .carType(CarType.SEDAN)
-                .plateNumber("AB-123-CD")
-                .build();
-
-        when(carRepository.save(any(Car.class))).thenReturn(saved);
-
-        CarDto result = carService.create(dto);
-
-        assertEquals(1L, result.getId());
-        assertEquals(CarType.SEDAN, result.getCarType());
-        assertEquals("AB-123-CD", result.getPlateNumber());
-        verify(carRepository).save(any(Car.class));
-    }
 
     @Test
     void getById_shouldReturnDto_whenFound() {
@@ -75,7 +53,22 @@ class CarServiceTest {
     }
 
     @Test
-    void getByCarType_shouldReturnFilteredList() {
+    void getAll_shouldReturnLimitedList() {
+        List<Car> cars = List.of(
+                Car.builder().id(1L).carType(CarType.SEDAN).plateNumber("AB-123-CD").build(),
+                Car.builder().id(2L).carType(CarType.SUV).plateNumber("EF-456-GH").build()
+        );
+
+        when(carRepository.findAll(PageRequest.of(0, 5)))
+                .thenReturn(new PageImpl<>(cars));
+
+        List<CarDto> result = carService.getAll(5);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void getByCarType_shouldReturnFilteredLimitedList() {
         List<Car> sedans = List.of(
                 Car.builder().id(1L).carType(CarType.SEDAN).plateNumber("AB-123-CD").build(),
                 Car.builder().id(2L).carType(CarType.SEDAN).plateNumber("EF-456-GH").build()
@@ -83,7 +76,7 @@ class CarServiceTest {
 
         when(carRepository.findByCarType(CarType.SEDAN)).thenReturn(sedans);
 
-        List<CarDto> result = carService.getByCarType(CarType.SEDAN);
+        List<CarDto> result = carService.getByCarType(CarType.SEDAN, 5);
 
         assertEquals(2, result.size());
         assertTrue(result.stream().allMatch(dto -> dto.getCarType() == CarType.SEDAN));
@@ -93,25 +86,8 @@ class CarServiceTest {
     void getByCarType_shouldReturnEmptyList_whenNoneFound() {
         when(carRepository.findByCarType(CarType.VAN)).thenReturn(List.of());
 
-        List<CarDto> result = carService.getByCarType(CarType.VAN);
+        List<CarDto> result = carService.getByCarType(CarType.VAN, 5);
 
         assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void delete_shouldDelete_whenExists() {
-        when(carRepository.existsById(1L)).thenReturn(true);
-
-        carService.delete(1L);
-
-        verify(carRepository).deleteById(1L);
-    }
-
-    @Test
-    void delete_shouldThrow_whenNotFound() {
-        when(carRepository.existsById(99L)).thenReturn(false);
-
-        assertThrows(ResourceNotFoundException.class, () -> carService.delete(99L));
-        verify(carRepository, never()).deleteById(any());
     }
 }

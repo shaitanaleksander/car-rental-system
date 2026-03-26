@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ratifire.admin.carrentalsystem.converter.UserConverter;
 import org.ratifire.admin.carrentalsystem.dto.UserDto;
 import org.ratifire.admin.carrentalsystem.entity.User;
-import org.ratifire.admin.carrentalsystem.exception.ResourceNotFoundException;
 import org.ratifire.admin.carrentalsystem.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,18 +27,4 @@ public class UserService {
         return UserConverter.toDto(saved);
     }
 
-    public UserDto getById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        return UserConverter.toDto(user);
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
-        }
-        userRepository.deleteById(id);
-        log.info("Deleted user with id: {}", id);
-    }
 }

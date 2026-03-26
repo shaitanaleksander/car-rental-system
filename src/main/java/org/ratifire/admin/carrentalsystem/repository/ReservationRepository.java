@@ -12,8 +12,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByUserId(Long userId);
 
-    List<Reservation> findByCarId(Long carId);
-
     @Query(value = "SELECT COUNT(*) > 0 FROM reservations r " +
             "WHERE r.car_id = :carId " +
             "AND r.start_date_time < :endDateTime " +
